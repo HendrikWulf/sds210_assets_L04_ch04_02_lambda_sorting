@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lambda Sorting Visualizer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        h3 {
+            margin-top: 0;
+            color: #1e293b;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 8px;
+            text-align: center;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            text-align: center;
+        }
+        .code-highlight { color: #fcd34d; font-weight: bold; }
+
+        .selector-area {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        .sort-btn {
+            background: white;
+            border: 2px solid #cbd5e1;
+            color: #475569;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .sort-btn.active {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .data-panel {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+        .station-card {
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            flex: 0 0 210px;
+            transition: all 0.5s ease-in-out;
+            border-left: 4px solid #94a3b8;
+        }
+        .station-card.Zürich { border-left-color: #3b82f6; }
+        .station-card.Genève { border-left-color: #8b5cf6; }
+        .station-card.Bern { border-left-color: #f59e0b; }
+        .key-field { display: flex; justify-content: space-between; gap: 5px; margin-top: 3px;}
+        .key-name { color: #64748b; }
+        .key-value { color: #1e293b; font-weight: bold;}
+        .key-active { color: #3b82f6; }
+
+        .assembly-line {
+            height: 150px;
+            background: #f8fafc;
+            border: 2px dashed #94a3b8;
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .lambda-box {
+            background: #0f172a;
+            color: #fca5a5;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .referee {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            min-height: 40px;
+            font-family: monospace;
+            justify-content: center;
+        }
+        .ref-val {
+            background: white;
+            color: #92400e;
+            border: 2px dashed #f59e0b;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        button.run-btn {
+            background-color: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 1rem;
+        }
+        button.run-btn:hover:not(:disabled) { background-color: #7c3aed; }
+        .btn-clear {
+            background-color: #e2e8f0;
+            color: #475569;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 1rem;
+        }
+        .btn-clear:hover { background-color: #cbd5e1; }
+        
+        .explanation {
+            background: #e0f2fe;
+            border-left: 4px solid #0284c7;
+            padding: 15px;
+            border-radius: 4px;
+            color: #0369a1;
+            font-size: 0.9rem;
+            text-align: center;
+            line-height: 1.5;
+            min-height: 45px;
+        }
+        /* Hidden mobile-only warning */
+        @media (max-width: 600px) {
+            .scenarios { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3>The Lambda Sorting Assembly Line</h3>
+    
+    <div class="selector-area">
+        Choose Sort Key:
+        <button id="btn-elevation" class="sort-btn active" onclick="setSortKey('elevation')">Elevation</button>
+        <button id="btn-population" class="sort-btn" onclick="setSortKey('population')">Population</button>
+        <button id="btn-name" class="sort-btn" onclick="setSortKey('name')">Name</button>
+    </div>
+
+    <div class="code-block">
+        stations.sort(key=lambda station: <span class="code-highlight" id="codeKey">station["elevation"]</span>)
+    </div>
+
+    <div class="data-panel" id="dataPanel">
+        </div>
+
+    <div class="assembly-line">
+        <div class="lambda-box">λ Extractor</div>
+    </div>
+
+    <div class="referee" id="referee">
+        <div class="inventory-title" style="margin-top:0; font-family:sans-serif; color:#92400e; font-weight:bold; font-size:0.85rem; text-transform:uppercase;">Internal Sort Key Referee</div>
+        <div style="display:flex; gap:10px;" id="referee-values">
+            <div class="ref-val" id="ref-0">?</div>
+            <div class="ref-val" id="ref-1">?</div>
+            <div class="ref-val" id="ref-2">?</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="run-btn" id="run-btn" onclick="runSimulation()">Run Key Extraction</button>
+        <button class="btn-clear" onclick="resetData()">Reset</button>
+    </div>
+    
+    <div class="explanation" id="explanation">
+        Click <b>Run Key Extraction</b> to observe the lambda function extracting the sort keys sequentially.
+    </div>
+</div>
+
+<script>
+    let currentKey = 'elevation';
+    let originalStations = [
+        {"name": "Zürich", "elevation": 408, "population": 415300, "x_lv95": 2683000},
+        {"name": "Genève", "elevation": 375, "population": 201800, "x_lv95": 2500000},
+        {"name": "Bern", "elevation": 542, "population": 133800, "x_lv95": 2600000}
+    ];
+    let stationsData = JSON.parse(JSON.stringify(originalStations)); // deep clone
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    function setSortKey(key) {
+        currentKey = key;
+        document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${key}`).classList.add('active');
+        document.getElementById('codeKey').textContent = `station["${key}"]`;
+        document.getElementById('explanation').innerHTML = `Sort Key set to <b>${key}</b>. Click Run to begin extraction.`;
+        resetData();
+    }
+
+    function resetData() {
+        // Restore original data order
+        stationsData = JSON.parse(JSON.stringify(originalStations));
+        renderStations();
+        document.getElementById('run-btn').disabled = false;
+        
+        // Bullet-proof reset of the referee table HTML structure
+        const refereeValues = document.getElementById('referee-values');
+        refereeValues.innerHTML = `
+            <div class="ref-val" id="ref-0" style="opacity:0;">?</div>
+            <div class="ref-val" id="ref-1" style="opacity:0;">?</div>
+            <div class="ref-val" id="ref-2" style="opacity:0;">?</div>
+        `;
+    }
+
+    function renderStations() {
+        const panel = document.getElementById('dataPanel');
+        panel.innerHTML = '';
+        stationsData.forEach((s, idx) => {
+            const card = document.createElement('div');
+            card.className = `station-card ${s.name}`;
+            card.id = `station-${idx}`;
+            card.innerHTML = `
+                <div style="color: #64748b; font-size: 0.75rem; border-bottom: 1px solid #f1f5f9; padding-bottom:3px; font-family:sans-serif; text-transform:uppercase; font-weight:bold;">Dictionary #${idx}</div>
+                <div class="key-field ${currentKey === 'name' ? 'key-active' : ''}"><span class="key-name">"name":</span> <span class="key-value">'${s.name}'</span></div>
+                <div class="key-field ${currentKey === 'elevation' ? 'key-active' : ''}"><span class="key-name">"elevation":</span> <span class="key-value">${s.elevation}</span></div>
+                <div class="key-field ${currentKey === 'population' ? 'key-active' : ''}"><span class="key-name">"population":</span> <span class="key-value">${s.population}</span></div>
+                <div class="key-field ${currentKey === 'x_lv95' ? 'key-active' : ''}"><span class="key-name">"x_lv95":</span> <span class="key-value">${s.x_lv95}</span></div>
+            `;
+            panel.appendChild(card);
+        });
+    }
+
+    async function runSimulation() {
+        document.getElementById('run-btn').disabled = true;
+        const exp = document.getElementById('explanation');
+        const refValues = document.getElementById('referee-values');
+
+        exp.innerHTML = "<b>Executing...</b> Python iterates over the list, feeding each dictionary to the lambda.";
+        await sleep(500);
+
+        const extractedKeys = [];
+
+        // 1. Extraction Phase
+        for (let i = 0; i < stationsData.length; i++) {
+            const station = stationsData[i];
+            const card = document.getElementById(`station-${i}`);
+            
+            // Highlight current card
+            card.style.transform = "scale(1.05)";
+            card.style.borderColor = "#8b5cf6";
+            await sleep(600);
+
+            // Animate extraction
+            const extractedVal = station[currentKey];
+            extractedKeys.push({ val: extractedVal, name: station.name });
+            exp.innerHTML = `Extracting key for ${station.name}... Lambda returns: <code>${extractedVal}</code>.`;
+            
+            card.style.opacity = "0.5";
+            card.style.transform = "none";
+            card.style.borderColor = "#cbd5e1";
+
+            // Update Referee table safely
+            const refVal = document.getElementById(`ref-${i}`);
+            if (refVal) {
+                refVal.textContent = extractedVal;
+                refVal.style.opacity = '1';
+            }
+
+            await sleep(1000);
+        }
+
+        // 2. Sorting Phase
+        exp.innerHTML = "<b>Extraction Complete!</b> Now the Internal Referee sorts the *extracted keys* from lowest to highest.";
+        await sleep(1000);
+
+        extractedKeys.sort((a, b) => {
+            if (currentKey === 'name') {
+                return a.val.localeCompare(b.val);
+            } else {
+                return a.val - b.val;
+            }
+        });
+
+        // Reorder Referee table (safely rewriting the HTML but preserving IDs for next reset)
+        refValues.innerHTML = '';
+        extractedKeys.forEach((ek, i) => {
+            refValues.innerHTML += `<div class="ref-val" id="ref-${i}" style="opacity:1; border-color:#10b981; color:#047857; background:#ecfdf5;">${ek.val}</div>`;
+        });
+        
+        await sleep(1200);
+
+        // 3. Final reordering of main list based on extracted sort order
+        stationsData.sort((a, b) => {
+             if (currentKey === 'name') {
+                return a[currentKey].localeCompare(b[currentKey]);
+            } else {
+                return a[currentKey] - b[currentKey];
+            }
+        });
+        
+        renderStations();
+        
+        // Remove transparency from newly rendered cards
+        for (let i = 0; i < stationsData.length; i++) {
+            document.getElementById(`station-${i}`).style.opacity = "1";
+        }
+
+        exp.innerHTML = `<b>Finished!</b> Python rearranged the original dictionaries based on the order of the extracted keys.`;
+    }
+
+    // Initialize display
+    setSortKey('elevation');
+</script>
+
+</body>
+</html>
